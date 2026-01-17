@@ -6,7 +6,7 @@ This repository contains a lightweight **Library Catalog** implemented in Python
 
 Purpose: practice designing normalized tables, writing safe parameterized SQL from application code, and building repeatable developer workflows (seed data, tests, and a small UI) to validate behaviors.
 
-[Software Demo Video](http://youtube.link.goes.here)
+[Software Demo Video] https://www.loom.com/share/8306dad399c8485e958fe799f8b732e6
 
 ---
 
