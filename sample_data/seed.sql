@@ -24,15 +24,30 @@ CREATE TABLE loans (
 );
 
 -- Sample data
-INSERT INTO authors (name) VALUES ('J. K. Rowling'), ('Frank Herbert'), ('Alan Beaulieu');
+INSERT INTO authors (name) VALUES
+  ('J. K. Rowling'),
+  ('Frank Herbert'),
+  ('Alan Beaulieu'),
+  ('Andrew Hunt'),
+  ('Robert C. Martin'),
+  ('Cal Newport'),
+  ('Cormen et al.'),
+  ('J. R. R. Tolkien');
 
 INSERT INTO books (title, author_id, qty) VALUES
-('Harry Potter and the Philosopher''s Stone', 1, 3),
-('Dune', 2, 2),
-('Learning SQL', 3, 1);
+  ('Harry Potter and the Philosopher''s Stone', 1, 3),
+  ('Dune', 2, 2),
+  ('Learning SQL', 3, 2),
+  ('The Pragmatic Programmer', 4, 2),
+  ('Clean Code', 5, 2),
+  ('Deep Work', 6, 2),
+  ('Introduction to Algorithms', 7, 2),
+  ('The Hobbit', 8, 2);
 
 INSERT INTO loans (book_id, borrower, loan_date) VALUES
-(2, 'Sam', '2024-11-05'),
-(1, 'Riley', '2025-02-10'),
-(1, 'Taylor', '2025-06-01'),
-(3, 'Jordan', '2025-07-20');
+  (2, 'Sam', '2024-11-05'),
+  (1, 'Riley', '2025-02-10'),
+  (1, 'Taylor', '2025-06-01'),
+  (3, 'Jordan', '2025-07-20'),
+  (4, 'Alex', '2025-03-15'),
+  (5, 'Morgan', '2025-08-01');

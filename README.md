@@ -54,6 +54,10 @@ pip install -r requirements.txt
 python seed.py          # create ./data/library.db with example rows
 python app.py list-books # CLI
 python webapp.py        # open http://127.0.0.1:5000
+# CLI: update/delete examples
+python app.py update-book --book-id 1 --title "New Title" --qty 4
+python app.py delete-book --book-id 2          # interactive confirmation
+python app.py delete-book --book-id 2 --yes     # skip prompt
 pytest -q
 ```
 
@@ -84,3 +88,16 @@ Notes for developers:
 ---
 
 If you want a condensed submission package (README + SQL seed) or a GitHub Actions workflow added, say which and I'll prepare it.
+
+## Adding data
+
+You can add data three ways:
+
+- CLI: `python app.py add-book --title "My New Book" --author "An Author" --qty 2`
+- API (JSON):
+  `curl -X POST -H "Content-Type: application/json" -d '{"title":"New Book","author":"An Author","qty":2}' http://127.0.0.1:5000/api/books`
+- Browser UI: open the web UI at `http://127.0.0.1:5000` and use the **Add a book** form on the right.
+
+Note: the UI **Edit** action prefills current values and allows editing `title`, `author`, and `quantity` (with validation); you can change one or more fields without retyping the others.
+
+All three paths validate `qty` (must be >= 1) and create the author automatically if it does not exist.

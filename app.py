@@ -85,6 +85,50 @@ def cmd_stats(args: argparse.Namespace) -> None:
     db.close()
 
 
+def _confirm(prompt: str, assume_yes: bool) -> bool:
+    if assume_yes:
+        return True
+    ans = input(f"{prompt} [y/N]: ").strip().lower()
+    return ans in ("y", "yes")
+
+
+def cmd_update_book(args: argparse.Namespace) -> None:
+    db = Database(args.db)
+    db.update_book(args.book_id, title=args.title, author_name=args.author, qty=args.qty)
+    print(f"updated book id={args.book_id}")
+    db.close()
+
+
+def cmd_delete_book(args: argparse.Namespace) -> None:
+    if not _confirm(f"Delete book id={args.book_id}? This will remove associated loans.", args.yes):
+        print("aborted")
+        return
+    db = Database(args.db)
+    db.delete_book(args.book_id)
+    print(f"deleted book id={args.book_id}")
+    db.close()
+
+
+def cmd_update_loan(args: argparse.Namespace) -> None:
+    db = Database(args.db)
+    db.return_loan(args.loan_id, return_date=args.return_date) if args.return_date else None
+    if args.borrower:
+        db.conn.execute("UPDATE loans SET borrower = ? WHERE id = ?", (args.borrower, args.loan_id))
+        db.conn.commit()
+    print(f"updated loan id={args.loan_id}")
+    db.close()
+
+
+def cmd_delete_loan(args: argparse.Namespace) -> None:
+    if not _confirm(f"Delete loan id={args.loan_id}?", args.yes):
+        print("aborted")
+        return
+    db = Database(args.db)
+    db.delete_loan(args.loan_id)
+    print(f"deleted loan id={args.loan_id}")
+    db.close()
+
+
 def make_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="app.py", description="Library Catalog (SQLite) CLI")
     p.add_argument("--db", default=DB_DEFAULT, type=Path, help="path to sqlite db")
@@ -114,6 +158,25 @@ def make_parser() -> argparse.ArgumentParser:
     rep.add_argument("--from", dest="from_date", required=True)
     rep.add_argument("--to", dest="to_date", required=True)
 
+    u = sub.add_parser("update-book")
+    u.add_argument("--book-id", type=int, required=True)
+    u.add_argument("--title")
+    u.add_argument("--author")
+    u.add_argument("--qty", type=int)
+
+    d = sub.add_parser("delete-book")
+    d.add_argument("--book-id", type=int, required=True)
+    d.add_argument("--yes", action="store_true", dest="yes", help="assume yes")
+
+    ul = sub.add_parser("update-loan")
+    ul.add_argument("--loan-id", type=int, required=True)
+    ul.add_argument("--borrower")
+    ul.add_argument("--return-date", type=lambda s: datetime.fromisoformat(s).date())
+
+    dl = sub.add_parser("delete-loan")
+    dl.add_argument("--loan-id", type=int, required=True)
+    dl.add_argument("--yes", action="store_true", dest="yes", help="assume yes")
+
     sub.add_parser("stats")
     return p
 
@@ -129,7 +192,11 @@ def main(argv: Optional[list[str]] = None) -> None:
         "seed": cmd_seed,
         "list-books": cmd_list_books,
         "add-book": cmd_add_book,
+        "update-book": cmd_update_book,
+        "delete-book": cmd_delete_book,
         "loan-book": cmd_loan_book,
+        "update-loan": cmd_update_loan,
+        "delete-loan": cmd_delete_loan,
         "return-loan": cmd_return_loan,
         "report-loans": cmd_report_loans,
         "stats": cmd_stats,

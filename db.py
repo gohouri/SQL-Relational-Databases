@@ -78,6 +78,27 @@ class Database:
         cur.execute("UPDATE books SET qty = qty + ? WHERE id = ?", (delta, book_id))
         self.conn.commit()
 
+    def update_book(self, book_id: int, title: Optional[str] = None, author_name: Optional[str] = None, qty: Optional[int] = None) -> None:
+        """Partially update a book's title, author and/or qty. If author_name is provided it will be created if missing."""
+        cur = self.conn.cursor()
+        updates = []
+        params: list[object] = []
+        if title is not None:
+            updates.append("title = ?")
+            params.append(title)
+        if author_name is not None:
+            author_id = self.add_author(author_name)
+            updates.append("author_id = ?")
+            params.append(author_id)
+        if qty is not None:
+            updates.append("qty = ?")
+            params.append(qty)
+        if not updates:
+            return
+        params.append(book_id)
+        cur.execute(f"UPDATE books SET {', '.join(updates)} WHERE id = ?", tuple(params))
+        self.conn.commit()
+
     def delete_book(self, book_id: int) -> None:
         cur = self.conn.cursor()
         cur.execute("DELETE FROM books WHERE id = ?", (book_id,))

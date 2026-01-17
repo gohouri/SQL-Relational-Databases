@@ -31,6 +31,26 @@ def create_app(db_path: Optional[Path] = None) -> Flask:
         db.close()
         return jsonify([b.__dict__ for b in books])
 
+    @app.route("/api/books", methods=["POST"])
+    def api_create_book():
+        payload = request.get_json(force=True)
+        if not payload or "title" not in payload or "author" not in payload:
+            return jsonify({"error": "title and author required"}), 400
+        try:
+            qty = int(payload.get("qty", 1))
+        except Exception:
+            return jsonify({"error": "qty must be an integer"}), 400
+        if qty < 1:
+            return jsonify({"error": "qty must be >= 1"}), 400
+        db = get_db()
+        try:
+            book_id = db.add_book(payload["title"], payload["author"], qty=qty)
+        except Exception as exc:
+            db.close()
+            return jsonify({"error": str(exc)}), 400
+        db.close()
+        return jsonify({"book_id": book_id}), 201
+
     @app.route("/api/loan", methods=["POST"])
     def api_loan():
         payload = request.get_json(force=True)
@@ -56,6 +76,52 @@ def create_app(db_path: Optional[Path] = None) -> Flask:
         except ValueError as exc:
             db.close()
             return jsonify({"error": str(exc)}), 400
+        db.close()
+        return jsonify({"ok": True})
+
+    @app.route("/api/books/<int:book_id>", methods=["PATCH"])
+    def api_patch_book(book_id: int):
+        payload = request.get_json(force=True)
+        if not payload:
+            return jsonify({"error": "no payload"}), 400
+        db = get_db()
+        try:
+            db.update_book(book_id, title=payload.get("title"), author_name=payload.get("author"), qty=payload.get("qty"))
+        except Exception as exc:
+            db.close()
+            return jsonify({"error": str(exc)}), 400
+        db.close()
+        return jsonify({"ok": True})
+
+    @app.route("/api/books/<int:book_id>", methods=["DELETE"])
+    def api_delete_book(book_id: int):
+        db = get_db()
+        db.delete_book(book_id)
+        db.close()
+        return jsonify({"ok": True})
+
+    @app.route("/api/loans/<int:loan_id>", methods=["PATCH"])
+    def api_patch_loan(loan_id: int):
+        payload = request.get_json(force=True)
+        if not payload:
+            return jsonify({"error": "no payload"}), 400
+        db = get_db()
+        try:
+            if "return_date" in payload:
+                db.return_loan(loan_id, return_date=payload.get("return_date"))
+            if "borrower" in payload:
+                db.conn.execute("UPDATE loans SET borrower = ? WHERE id = ?", (payload.get("borrower"), loan_id))
+                db.conn.commit()
+        except ValueError as exc:
+            db.close()
+            return jsonify({"error": str(exc)}), 400
+        db.close()
+        return jsonify({"ok": True})
+
+    @app.route("/api/loans/<int:loan_id>", methods=["DELETE"])
+    def api_delete_loan(loan_id: int):
+        db = get_db()
+        db.delete_loan(loan_id)
         db.close()
         return jsonify({"ok": True})
 

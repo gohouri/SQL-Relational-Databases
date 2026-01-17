@@ -15,12 +15,29 @@
       <div class="col-md-7">
         <h4>Books</h4>
         <table class="table table-sm table-striped" id="books-table">
-          <thead><tr><th>ID</th><th>Title</th><th>Author</th><th>Qty</th></tr></thead>
+          <thead><tr><th>ID</th><th>Title</th><th>Author</th><th>Qty</th><th>Actions</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
 
       <div class="col-md-5">
+        <h4>Add a book</h4>
+        <form id="add-book-form" class="mb-3">
+          <div class="mb-2">
+            <label class="form-label">Title</label>
+            <input id="add-title" class="form-control" type="text" required />
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Author</label>
+            <input id="add-author" class="form-control" type="text" required />
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Quantity</label>
+            <input id="add-qty" class="form-control" type="number" min="1" value="2" required />
+          </div>
+          <button class="btn btn-success">Add book</button>
+        </form>
+
         <h4>Loan a book</h4>
         <form id="loan-form">
           <div class="mb-2">
@@ -53,10 +70,89 @@ async function loadBooks(){
   tbody.innerHTML = '';
   books.forEach(b => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${b.id}</td><td>${b.title}</td><td>${b.author}</td><td>${b.qty}</td>`;
+    tr.innerHTML = `
+      <td>${b.id}</td>
+      <td>${b.title}</td>
+      <td>${b.author}</td>
+      <td>${b.qty}</td>
+      <td>
+        <button class="btn btn-sm btn-outline-secondary me-1" data-action="edit" data-id="${b.id}">Edit</button>
+        <button class="btn btn-sm btn-outline-danger" data-action="delete" data-id="${b.id}">Delete</button>
+      </td>`;
     tbody.appendChild(tr);
   });
 }
+
+async function _apiPatch(path, body){
+  const res = await fetch(path, {method: 'PATCH', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body)});
+  return res;
+}
+
+async function _apiDelete(path){
+  const res = await fetch(path, {method: 'DELETE'});
+  return res;
+}
+
+document.querySelector('#books-table').addEventListener('click', async (ev)=>{
+  const btn = ev.target.closest('button[data-action]');
+  if(!btn) return;
+  const id = Number(btn.dataset.id);
+  if(btn.dataset.action === 'delete'){
+    if(!confirm(`Delete book ${id}? This will remove related loans.`)) return;
+    const res = await _apiDelete(`/api/books/${id}`);
+    const body = await res.json();
+    document.getElementById('result').textContent = JSON.stringify({status: res.status, body}, null, 2);
+    await loadBooks();
+    return;
+  }
+  if(btn.dataset.action === 'edit'){
+    const row = btn.closest('tr');
+    const currTitle = row.children[1].textContent.trim();
+    const currAuthor = row.children[2].textContent.trim();
+    const currQty = row.children[3].textContent.trim();
+
+    const newTitle = prompt('New title (leave blank to keep):', currTitle);
+    if (newTitle === null) return; // cancelled
+    const newAuthor = prompt('New author (leave blank to keep):', currAuthor);
+    if (newAuthor === null) return;
+    const newQtyRaw = prompt('New qty (leave blank to keep):', currQty);
+    if (newQtyRaw === null) return;
+
+    const payload = {};
+    if (newTitle.trim() !== '' && newTitle.trim() !== currTitle) payload.title = newTitle.trim();
+    if (newAuthor.trim() !== '' && newAuthor.trim() !== currAuthor) payload.author = newAuthor.trim();
+    if (newQtyRaw.trim() !== '') {
+      const nq = Number(newQtyRaw);
+      if (!Number.isFinite(nq) || !Number.isInteger(nq) || nq < 0) {
+        alert('Quantity must be an integer ≥ 0');
+        return;
+      }
+      if (nq !== Number(currQty)) payload.qty = nq;
+    }
+    if (Object.keys(payload).length === 0) {
+      document.getElementById('result').textContent = 'no changes';
+      return;
+    }
+
+    const res = await _apiPatch(`/api/books/${id}`, payload);
+    const body = await res.json();
+    document.getElementById('result').textContent = JSON.stringify({status: res.status, body}, null, 2);
+    await loadBooks();
+    return;
+  }
+});
+
+
+document.getElementById('add-book-form').addEventListener('submit', async (ev)=>{
+  ev.preventDefault();
+  const title = document.getElementById('add-title').value.trim();
+  const author = document.getElementById('add-author').value.trim();
+  const qty = Number(document.getElementById('add-qty').value || 1);
+  const res = await fetch('/api/books', {method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({title, author, qty})});
+  const body = await res.json();
+  document.getElementById('result').textContent = JSON.stringify({status: res.status, body}, null, 2);
+  await loadBooks();
+});
 
 document.getElementById('loan-form').addEventListener('submit', async (ev)=>{
   ev.preventDefault();

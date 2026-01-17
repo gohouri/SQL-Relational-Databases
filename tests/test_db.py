@@ -55,4 +55,10 @@ def test_date_range_filter(db_path):
 
     rows = db.loans_in_date_range("2025-01-01", "2025-12-31")
     assert all(date.fromisoformat(r['loan_date']).year == 2025 for r in rows)
+
+    # update book and delete book
+    db.update_book(b, title="DR-updated", qty=3)
+    assert [x for x in db.get_books() if x.id == b][0].title == "DR-updated"
+    db.delete_book(b)
+    assert all(x.id != b for x in db.get_books())
     db.close()
